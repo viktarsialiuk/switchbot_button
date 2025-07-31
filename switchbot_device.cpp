@@ -1,27 +1,29 @@
 #include "switchbot_device.h"
 
-#include "esp_bt_defs.h"
+#include <cstdlib>
+
 #include "BLEClient.h"
 #include "BLEDevice.h"
 #include "HardwareSerial.h"
+#include "esp_bt_defs.h"
 
 void SwitchBotDevice_init(SwitchBotDevice *sb) {
     sb->client = BLEDevice::createClient();
-    sb->service = NULL;
-    sb->characteristic = NULL;
+    sb->service = nullptr;
+    sb->characteristic = nullptr;
 }
 
-bool SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
-    if (sb->characteristic) {
-        delete sb->characteristic;
-        sb->characteristic = nullptr;
-    }
-    if (sb->service) {
-        delete sb->service;
-        sb->service = nullptr;
-    }
+void SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
+    // BLECharacteristic is owned by BLERemotService which are in turn owned by
+    // BLEClient, all we need is to clean up the client.
+    sb->characteristic = nullptr;
+    sb->service = nullptr;
+    // Disconnect client.
     if (sb->client->isConnected()) {
+        // Somehow this makes arduino to fail.
+        // Maybe we should delete and recreate the client.
         sb->client->disconnect();
+        Serial.println("SwitchBotDevice disconnected");
     }
 }
 
@@ -68,16 +70,13 @@ bool SwitchBotDevice_send(SwitchBotDevice *sb, uint8_t *command,
 }
 
 void SwitchBotDevice_free(SwitchBotDevice *sb) {
-    if (sb->characteristic) {
-        delete sb->characteristic;
-    }
-    if (sb->service) {
-        delete sb->service;
-    }
+    // BLECharacteristic is owned by BLERemotService which are in turn owned by
+    // BLEClient, all we need is to delete client.
     if (sb->client) {
         if (sb->client->isConnected()) {
             sb->client->disconnect();
         }
         delete sb->client;
+        sb->client = nullptr;
     }
 }

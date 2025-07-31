@@ -1,11 +1,14 @@
 #include "switchbot_client.h"
 
+#include <cstdlib>
+
 #include "BLEScan.h"
 #include "HardwareSerial.h"
 #include "switchbot_device.h"
 
 void SwitchBotClient_init(SwitchBotClient* client, BLEUUID service_uuid,
-                          BLEUUID char_uuid, uint32_t max_keep_alive) {
+                          BLEUUID char_uuid, uint32_t max_clients,
+                          uint32_t max_keep_alive) {
     BLEDevice::init("");
     // Init global BLEScan.
     BLEScan* ble_scan = BLEDevice::getScan();
@@ -13,20 +16,31 @@ void SwitchBotClient_init(SwitchBotClient* client, BLEUUID service_uuid,
     ble_scan->setWindow(449);
     ble_scan->setActiveScan(true);
 
+    client->service_uuid = service_uuid;
+    client->char_uuid = char_uuid;
+    client->max_clients = max_clients;
+    client->devices = new SwitchBotDevice[max_clients];
+    if (client->devices == nullptr) {
+        Serial.println("FAILED TO CREATE DEVICES!!!!!");
+        return;
+    }
     // Init devices. This is only memory allocation.
-    for (uint32_t i = 0; i < MAX_SWITCHBOT_CLIENTS; ++i) {
+    for (uint32_t i = 0; i < max_clients; ++i) {
         SwitchBotDevice_init(&client->devices[i]);
     }
     client->num_clients = 0;
-    client->service_uuid = service_uuid;
-    client->char_uuid = char_uuid;
     client->last_alive = 0;
     client->max_keep_alive = max_keep_alive;
+    Serial.println("SwitchBotClient_init done.");
 }
 
 void SwitchBotClient_free(SwitchBotClient* client) {
-    for (uint32_t i = 0; i < MAX_SWITCHBOT_CLIENTS; ++i) {
+    for (uint32_t i = 0; i < client->max_clients; ++i) {
         SwitchBotDevice_free(&client->devices[i]);
+    }
+    if (client->devices) {
+        delete[] client->devices;
+        client->devices = nullptr;
     }
 }
 
@@ -35,7 +49,7 @@ bool SwitchBotClient_connected(SwitchBotClient* client) {
 }
 
 bool SwitchBotClient_connect(SwitchBotClient* client, BLEAddress address) {
-    if (client->num_clients >= MAX_SWITCHBOT_CLIENTS) {
+    if (client->num_clients >= client->max_clients) {
         Serial.println("Max amount of clients reached.");
         return false;
     }
@@ -54,7 +68,6 @@ void SwitchBotClient_disconnect(SwitchBotClient* client) {
     for (uint32_t i = 0; i < client->num_clients; ++i) {
         SwitchBotDevice_disconnect(&client->devices[i]);
     }
-
     client->num_clients = 0;
     client->last_alive = 0;
 }

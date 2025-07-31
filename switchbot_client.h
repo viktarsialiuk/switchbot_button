@@ -5,9 +5,9 @@
 #include "BLEDevice.h"
 #include "switchbot_device.h"
 
-#define MAX_SWITCHBOT_CLIENTS 10
 struct SwitchBotClient {
-    SwitchBotDevice devices[MAX_SWITCHBOT_CLIENTS];
+    SwitchBotDevice* devices;
+    uint32_t max_clients;
     uint32_t num_clients;
     BLEUUID service_uuid;
     BLEUUID char_uuid;
@@ -16,7 +16,7 @@ struct SwitchBotClient {
 };
 
 void SwitchBotClient_init(SwitchBotClient* client, BLEUUID service_uuid,
-                          BLEUUID char_uuid, uint32_t max_keep_alive = 10000);
+                          BLEUUID char_uuid, uint32_t max_clients = 10, uint32_t max_keep_alive = 10000);
 void SwitchBotClient_free(SwitchBotClient* client);
 bool SwitchBotClient_connected(SwitchBotClient* client);
 bool SwitchBotClient_connect(SwitchBotClient* client, BLEAddress address);
