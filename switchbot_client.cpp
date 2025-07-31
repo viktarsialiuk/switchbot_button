@@ -19,14 +19,14 @@ void SwitchBotClient_init(SwitchBotClient* client, BLEUUID service_uuid,
     client->service_uuid = service_uuid;
     client->char_uuid = char_uuid;
     client->max_clients = max_clients;
-    client->devices = new SwitchBotDevice[max_clients];
-    if (client->devices == nullptr) {
-        Serial.println("FAILED TO CREATE DEVICES!!!!!");
+    client->connections = new SwitchBotDevice[max_clients];
+    if (client->connections == nullptr) {
+        Serial.println("FAILED TO CREATE CONNECTIONS!");
         return;
     }
-    // Init devices. This is only memory allocation.
+    // Init connections. This is only memory allocation.
     for (uint32_t i = 0; i < max_clients; ++i) {
-        SwitchBotDevice_init(&client->devices[i]);
+        SwitchBotDevice_init(&client->connections[i]);
     }
     client->num_clients = 0;
     client->last_alive = 0;
@@ -36,11 +36,11 @@ void SwitchBotClient_init(SwitchBotClient* client, BLEUUID service_uuid,
 
 void SwitchBotClient_free(SwitchBotClient* client) {
     for (uint32_t i = 0; i < client->max_clients; ++i) {
-        SwitchBotDevice_free(&client->devices[i]);
+        SwitchBotDevice_free(&client->connections[i]);
     }
-    if (client->devices) {
-        delete[] client->devices;
-        client->devices = nullptr;
+    if (client->connections) {
+        delete[] client->connections;
+        client->connections = nullptr;
     }
 }
 
@@ -53,7 +53,7 @@ bool SwitchBotClient_connect(SwitchBotClient* client, BLEAddress address) {
         Serial.println("Max amount of clients reached.");
         return false;
     }
-    if (!SwitchBotDevice_connect(&client->devices[client->num_clients], address,
+    if (!SwitchBotDevice_connect(&client->connections[client->num_clients], address,
                                  client->service_uuid, client->char_uuid)) {
         Serial.println("Failed to connect to Switchbot!");
         return false;
@@ -66,7 +66,7 @@ bool SwitchBotClient_connect(SwitchBotClient* client, BLEAddress address) {
 
 void SwitchBotClient_disconnect(SwitchBotClient* client) {
     for (uint32_t i = 0; i < client->num_clients; ++i) {
-        SwitchBotDevice_disconnect(&client->devices[i]);
+        SwitchBotDevice_disconnect(&client->connections[i]);
     }
     client->num_clients = 0;
     client->last_alive = 0;
@@ -93,7 +93,7 @@ bool SwitchBotClient_send(SwitchBotClient* client, uint8_t* command,
                           uint32_t byte_size) {
     bool all_succeeded = client->num_clients > 0;
     for (uint32_t i = 0; i < client->num_clients; ++i) {
-        if (!SwitchBotDevice_send(&client->devices[i], command, byte_size)) {
+        if (!SwitchBotDevice_send(&client->connections[i], command, byte_size)) {
             all_succeeded = false;
         }
     }

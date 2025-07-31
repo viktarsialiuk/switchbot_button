@@ -1,4 +1,4 @@
-#include "Arduino.h"
+#include <Arduino.h>
 
 #include "exponential_delay.h"
 #include "switchbot_client.h"
@@ -26,13 +26,15 @@ void setup() {
 void loop() {
     int brightness = analogRead(A1);
     Serial.printf("Brightness sensor %d\r\n", brightness);
-    if (brightness > 350) {
-        uint8_t pressCommand[] = {0x57, 0x01, 0x00};
-        SwitchBotClient_smart_send(&switchbot_client, &pressCommand[0],
-                                   sizeof(pressCommand));
-        ExponentialDelay_wait(&exp_delay);
+    if (brightness > 100) {
+        if (ExponentialDelay_try_enter(&exp_delay)) {
+            uint8_t pressCommand[] = {0x57, 0x01, 0x00};
+            SwitchBotClient_smart_send(&switchbot_client, &pressCommand[0],
+                                       sizeof(pressCommand));
+            ExponentialDelay_start(&exp_delay);
+        }
     } else {
         ExponentialDelay_reset(&exp_delay);
-        delay(1000);
     }
+    delay(1000);
 }

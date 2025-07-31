@@ -6,7 +6,7 @@
 #include "switchbot_device.h"
 
 struct SwitchBotClient {
-    SwitchBotDevice* devices;
+    SwitchBotDevice* connections;
     uint32_t max_clients;
     uint32_t num_clients;
     BLEUUID service_uuid;
