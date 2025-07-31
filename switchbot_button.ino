@@ -26,7 +26,7 @@ void setup() {
 void loop() {
     int brightness = analogRead(A1);
     Serial.printf("Brightness sensor %d\r\n", brightness);
-    if (brightness > 100) {
+    if (brightness > 300) {
         if (ExponentialDelay_try_enter(&exp_delay)) {
             uint8_t pressCommand[] = {0x57, 0x01, 0x00};
             SwitchBotClient_smart_send(&switchbot_client, &pressCommand[0],
