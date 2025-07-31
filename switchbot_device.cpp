@@ -13,6 +13,32 @@ void SwitchBotDevice_init(SwitchBotDevice *sb) {
     sb->characteristic = nullptr;
 }
 
+bool SwitchBotDevice_connect(SwitchBotDevice *sb, const BLEAddress address,
+                             BLEUUID service_uuid, BLEUUID char_uuid) {
+    if (sb->client->isConnected()) {
+        Serial.println("SwitchBotDevice is already connected.");
+    }
+    if (!sb->client->connect(address, BLE_ADDR_TYPE_RANDOM)) {
+        Serial.println("SwitchBotDevice failed to connect.");
+        return false;
+    }
+    // Largest transmission unit.
+    // sb->client->setMTU(517);
+    sb->service = sb->client->getService(service_uuid);
+    if (sb->service == nullptr) {
+        Serial.println("SwitchBotDevice failed to get service.");
+        SwitchBotDevice_disconnect(sb);
+        return false;
+    }
+    sb->characteristic = sb->service->getCharacteristic(char_uuid);
+    if (sb->characteristic == nullptr) {
+        Serial.println("SwitchBotDevice failed to get characteristic.");
+        SwitchBotDevice_disconnect(sb);
+        return false;
+    }
+    return true;
+}
+
 void SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
     // BLECharacteristic is owned by BLERemotService which are in turn owned by
     // BLEClient, all we need is to clean up the client.
@@ -25,34 +51,6 @@ void SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
         sb->client->disconnect();
         Serial.println("SwitchBotDevice disconnected");
     }
-}
-
-bool SwitchBotDevice_connect(SwitchBotDevice *sb, const BLEAddress address,
-                             BLEUUID service_uuid, BLEUUID char_uuid) {
-    if (sb->client->isConnected()) {
-        Serial.println("SwitchBotDevice is already connected.");
-        return false;
-    }
-    if (!sb->client->connect(address, BLE_ADDR_TYPE_RANDOM)) {
-        Serial.println("SwitchBotDevice failed to connect.");
-        goto error;
-    }
-    // Largest transmission unit.
-    // sb->client->setMTU(517);
-    sb->service = sb->client->getService(service_uuid);
-    if (sb->service == nullptr) {
-        Serial.println("SwitchBotDevice failed to get service.");
-        goto error;
-    }
-    sb->characteristic = sb->service->getCharacteristic(char_uuid);
-    if (sb->characteristic == nullptr) {
-        Serial.println("SwitchBotDevice failed to get characteristic.");
-        goto error;
-    }
-    return true;
-error:
-    SwitchBotDevice_disconnect(sb);
-    return false;
 }
 
 bool SwitchBotDevice_connected(SwitchBotDevice *sb) {

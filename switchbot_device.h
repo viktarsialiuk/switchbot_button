@@ -12,9 +12,9 @@ struct SwitchBotDevice {
 };
 
 void SwitchBotDevice_init(SwitchBotDevice *sb);
-void SwitchBotDevice_disconnect(SwitchBotDevice *sb);
 bool SwitchBotDevice_connect(SwitchBotDevice *sb, const BLEAddress address,
                              BLEUUID service_uuid, BLEUUID char_uuid);
+void SwitchBotDevice_disconnect(SwitchBotDevice *sb);
 bool SwitchBotDevice_send(SwitchBotDevice *sb, uint8_t *command,
                           size_t bytes_size);
 void SwitchBotDevice_free(SwitchBotDevice *sb);
