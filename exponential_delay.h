@@ -17,7 +17,7 @@ void ExponentialDelay_init(ExponentialDelay* exp_delay,
                            uint32_t exponent = 2);
 void ExponentialDelay_reset(ExponentialDelay* exp_delay);
 bool ExponentialDelay_is_active(const ExponentialDelay* exp_delay);
-void ExponentialDelay_start(ExponentialDelay* exp_delay);
+void ExponentialDelay_delay(ExponentialDelay* exp_delay);
 bool ExponentialDelay_try_enter(const ExponentialDelay* exp_delay);
 
 #endif  // EXPONENTIAL_DELAY_H_

@@ -21,7 +21,7 @@ bool ExponentialDelay_is_active(const ExponentialDelay* exp_delay) {
     return exp_delay->delay_started_millis > 0;
 }
 
-void ExponentialDelay_start(ExponentialDelay* exp_delay) {
+void ExponentialDelay_delay(ExponentialDelay* exp_delay) {
     exp_delay->current_delay *= exp_delay->exponent;
     if (exp_delay->current_delay > exp_delay->max_delay) {
         exp_delay->current_delay = exp_delay->max_delay;
