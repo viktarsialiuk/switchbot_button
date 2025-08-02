@@ -56,6 +56,7 @@ void loop() {
             ExponentialDelay_delay(&exp_delay);
         }
     } else {
+        SwitchBotClient_diconnect(&switchbot_client);
         ExponentialDelay_reset(&exp_delay);
     }
     delay(1000);
