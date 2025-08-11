@@ -1,13 +1,16 @@
 #include "switchbot_device.h"
 
-#include <cstdlib>
-
-#include "BLEClient.h"
-#include "BLEDevice.h"
-#include "HardwareSerial.h"
-#include "esp_bt_defs.h"
+#include <BLEAddress.h>
+#include <BLEClient.h>
+#include <BLEDevice.h>
+#include <BLEScan.h>
+#include <HardwareSerial.h>
+#include <esp_bt_defs.h>
+#include <stdlib.h>
+#include <string.h>
 
 void SwitchBotDevice_init(SwitchBotDevice *sb) {
+    BLEDevice::init("");
     sb->client = BLEDevice::createClient();
     sb->service = nullptr;
     sb->characteristic = nullptr;
@@ -15,8 +18,8 @@ void SwitchBotDevice_init(SwitchBotDevice *sb) {
 
 bool SwitchBotDevice_connect(SwitchBotDevice *sb, const BLEAddress address,
                              BLEUUID service_uuid, BLEUUID char_uuid) {
-    if (sb->client->isConnected()) {
-        Serial.println("SwitchBotDevice is already connected.");
+    if (SwitchBotDevice_is_connected(sb)) {
+        Serial.println("Warning: SwitchBotDevice is already connected.");
     }
     if (!sb->client->connect(address, BLE_ADDR_TYPE_RANDOM)) {
         Serial.println("SwitchBotDevice failed to connect.");
@@ -39,6 +42,28 @@ bool SwitchBotDevice_connect(SwitchBotDevice *sb, const BLEAddress address,
     return true;
 }
 
+bool SwitchBotDevice_connect_str(SwitchBotDevice *sb, const char *address,
+                                 BLEUUID service_uuid, BLEUUID char_uuid) {
+    if (strlen(address) != 17) {
+        Serial.printf("Bad BLE address string '%s'\r\n", address);
+        return false;
+    }
+
+    // ESP_BD_ADDR_LEN == 6
+    int data[6];
+    sscanf(address, "%x:%x:%x:%x:%x:%x", &data[0], &data[1], &data[2], &data[3],
+           &data[4], &data[5]);
+
+    // typedef uint8_t esp_bd_addr_t[ESP_BD_ADDR_LEN];
+    esp_bd_addr_t native;
+    for (size_t index = 0; index < sizeof(native); index++) {
+        native[index] = (uint8_t)data[index];
+    }
+
+    return SwitchBotDevice_connect(sb, BLEAddress(native), service_uuid,
+                                   char_uuid);
+}
+
 void SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
     // BLECharacteristic is owned by BLERemotService which are in turn owned by
     // BLEClient, all we need is to clean up the client.
@@ -53,13 +78,14 @@ void SwitchBotDevice_disconnect(SwitchBotDevice *sb) {
     }
 }
 
-bool SwitchBotDevice_connected(SwitchBotDevice *sb) {
-    return sb->client->isConnected();
+bool SwitchBotDevice_is_connected(SwitchBotDevice *sb) {
+    return sb->characteristic != nullptr;
 }
 
 bool SwitchBotDevice_send(SwitchBotDevice *sb, uint8_t *command,
                           size_t bytes_size) {
-    if (!SwitchBotDevice_connected(sb)) {
+    if (sb->characteristic == nullptr) {
+        // Not connected;
         return false;
     }
     // uint8_t pressCommand[] = {0x57, 0x01, 0x00};
@@ -76,5 +102,22 @@ void SwitchBotDevice_free(SwitchBotDevice *sb) {
         }
         delete sb->client;
         sb->client = nullptr;
+    }
+}
+
+void SwitchBotDevice_scan(BLEUUID service_uuid) {
+    // Init global BLEScan.
+    BLEScan *ble_scan = BLEDevice::getScan();
+    ble_scan->setInterval(1349);
+    ble_scan->setWindow(449);
+    ble_scan->setActiveScan(true);
+
+    BLEScanResults results = ble_scan->start(5, false);
+    for (uint32_t i = 0; i < results.getCount(); ++i) {
+        BLEAdvertisedDevice device = results.getDevice(i);
+        if (device.haveServiceUUID() &&
+            device.isAdvertisingService(service_uuid)) {
+            Serial.printf("Found Switchbot! %s\r\n", device.toString().c_str());
+        }
     }
 }
