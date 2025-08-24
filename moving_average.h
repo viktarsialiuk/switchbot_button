@@ -8,8 +8,8 @@ struct MovingAverage {
     uint16_t index;
 };
 
-void MovingAverage_init(MovingAverage* ma);
-void MovingAverage_add_value(MovingAverage* ma, uint16_t value);
-uint16_t MovingAverage_get_average(const MovingAverage* ma);
+void moving_average_init(MovingAverage* ma);
+void moving_average_add_value(MovingAverage* ma, uint16_t value);
+uint16_t moving_average_get_average(const MovingAverage* ma);
 
 #endif  // MOVING_AVERAGE_H_
